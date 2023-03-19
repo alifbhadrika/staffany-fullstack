@@ -12,3 +12,8 @@ export interface IUpdateShift {
   endTime?: string;
   weekId? : string;
 }
+
+export interface IPublishShift {
+  startDate: string;
+  endDate: string;
+}

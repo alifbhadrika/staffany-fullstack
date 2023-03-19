@@ -45,6 +45,13 @@ export const create = async (payload: Shift): Promise<Shift> => {
   return newdata;
 };
 
+export const save = async (payload: Shift[]): Promise<Shift[]> => {
+  logger.info("Save");
+  const repository = getRepository(Shift);
+  const savedData = await repository.save(payload);
+  return savedData;
+};
+
 export const updateById = async (
   id: string,
   payload: QueryDeepPartialEntity<Shift>

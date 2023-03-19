@@ -1,3 +1,4 @@
+import { boolean } from "joi";
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 import { BaseTimestamp } from "./baseTimestamp";
 
@@ -23,4 +24,15 @@ export default class Shift extends BaseTimestamp {
     type: "time",
   })
   endTime: string;
+
+  @Column({
+    type: "boolean",
+    default: false,
+  })
+  isPublished: boolean;
+
+  @Column({
+    type: "date",
+  })
+  startWeekDate: Date;
 }
