@@ -22,4 +22,21 @@ export const staffanyTheme = createTheme({
     red: STAFFANY_RED,
     turqouise: STAFFANY_TURQOISE,
   },
+  overrides: {
+    MuiButton: {
+      outlined: {
+        color: STAFFANY_TURQOISE,
+        borderColor: STAFFANY_TURQOISE,
+      },
+      contained: {
+        color: "white",
+        backgroundColor: STAFFANY_TURQOISE,
+      },
+    },
+    MuiTypography: {
+      colorPrimary: {
+        color: STAFFANY_TURQOISE,
+      },
+    },
+  },
 });

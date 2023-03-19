@@ -36,3 +36,17 @@
     transform: rotate(360deg);
   }
 }
+
+.picker-container {
+  display: inline-block;
+  position: relative;
+}
+
+.week-picker {
+  position: absolute;
+  left: 100%;
+  transform: translateX(-50%);
+  top: 40px;
+  border: 1px solid #ccc;
+  z-index: 999;
+}

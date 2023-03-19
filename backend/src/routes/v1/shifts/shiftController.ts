@@ -3,21 +3,35 @@ import * as shiftUsecase from "../../../usecases/shiftUsecase";
 import { errorHandler } from "../../../shared/functions/error";
 import {
   ICreateShift,
-  IErrorResponse,
   IPublishShift,
   ISuccessResponse,
   IUpdateShift,
 } from "../../../shared/interfaces";
 import moduleLogger from "../../../shared/functions/logger";
 import Shift from "../../../database/default/entity/shift";
+import { HttpError } from "../../../shared/classes/HttpError";
 
 const logger = moduleLogger("shiftController");
 
 export const find = async (req: Request, h: ResponseToolkit) => {
   logger.info("Find shifts");
   try {
-    const filter = req.query;
-    const data = await shiftUsecase.find(filter);
+    let filter = req.query;
+
+    let data = [];
+    const { startDate, endDate } = req.query;
+    if (startDate && endDate) {
+      delete filter.startDate;
+      delete filter.endDate;
+
+      data = await shiftUsecase.findShiftsBetweenDate(
+        startDate,
+        endDate,
+        filter
+      );
+    } else {
+      data = await shiftUsecase.find(filter);
+    }
     const res: ISuccessResponse = {
       statusCode: 200,
       message: "Get shift successful",
@@ -60,11 +74,7 @@ export const create = async (req: Request, h: ResponseToolkit) => {
         body.date
       );
       if (overlappingShifts.length > 0) {
-        return {
-          error: "Cannot create shift",
-          statusCode: 400,
-          message: "Shift overlapped with other Shift",
-        } as IErrorResponse;
+        throw new HttpError(400, "Shift overlapped with other Shift");
       }
 
       // check if the date is already been published
@@ -74,11 +84,10 @@ export const create = async (req: Request, h: ResponseToolkit) => {
       );
 
       if (publishedShifts.length > 0) {
-        return {
-          error: "Cannot create shift",
-          statusCode: 400,
-          message: "The date is on the week that has already published",
-        } as IErrorResponse;
+        throw new HttpError(
+          400,
+          "The date is on the week that has already published"
+        );
       }
     }
 
@@ -101,30 +110,35 @@ export const updateById = async (req: Request, h: ResponseToolkit) => {
     const id = req.params.id;
     const body = req.payload as IUpdateShift;
 
-    // check if shift overlap others
     if (body.startTime && body.endTime && body.date) {
+      // check if shift overlap others
       const overlappingShifts = await shiftUsecase.findOverlap(
         body.startTime,
         body.endTime,
         body.date
       );
       if (overlappingShifts.length > 0) {
-        return {
-          error: "Cannot update shift",
-          statusCode: 400,
-          message: "Shift overlapped with other Shift",
-        } as IErrorResponse;
+        throw new HttpError(400, "Shift overlapped with other Shift");
+      }
+
+      // check if the date is already been published
+      const date = new Date(body.date);
+      const publishedShifts = await shiftUsecase.findPublishedShiftsInTheWeek(
+        date
+      );
+
+      if (publishedShifts.length > 0) {
+        throw new HttpError(
+          400,
+          "The date is on the week that has already published"
+        );
       }
     }
 
     // check if shift has been published
     const shift = await shiftUsecase.findById(id);
     if (shift.isPublished) {
-      return {
-        error: "Cannot update shift",
-        statusCode: 400,
-        message: "Shift has already been published",
-      } as IErrorResponse;
+      throw new HttpError(400, "Shift has already been published");
     }
 
     const data = await shiftUsecase.updateById(id, body);
@@ -148,11 +162,7 @@ export const deleteById = async (req: Request, h: ResponseToolkit) => {
     // check if shift has been published
     const shift = await shiftUsecase.findById(id);
     if (shift.isPublished) {
-      return {
-        error: "Cannot delete shift",
-        statusCode: 400,
-        message: "Shift has already been published",
-      } as IErrorResponse;
+      throw new HttpError(400, "Shift has already been published");
     }
 
     const data = await shiftUsecase.deleteById(id);
@@ -181,11 +191,12 @@ export const publish = async (req: Request, h: ResponseToolkit) => {
     const shifts = await shiftUsecase.findShiftsBetweenDate(startDate, endDate);
 
     if (shifts.length === 0) {
-      return {
-        error: "Cannot publish shift",
-        statusCode: 400,
-        message: "No shifts found between the date",
-      } as IErrorResponse;
+      throw new HttpError(400, "There are no shifts between selected dates");
+    }
+
+    // check if shift has already published
+    if (shifts[0].isPublished) {
+      throw new HttpError(400, "Shifts has already been published");
     }
 
     // update isPublished field in every shift

@@ -65,12 +65,14 @@ export const findOverlap = async (
 
 export const findShiftsBetweenDate = async (
   statrtDate: string,
-  endDate: string
+  endDate: string,
+  opts?: FindManyOptions<Shift>
 ) => {
   return shiftRepository.find({
     where: {
       date: Between(new Date(statrtDate), new Date(endDate)),
     },
+    ...opts,
   });
 };
 
